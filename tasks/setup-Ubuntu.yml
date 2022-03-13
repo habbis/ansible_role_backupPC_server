@@ -34,9 +34,9 @@
   shell: cd /usr/local ; git clone https://github.com/backuppc/backuppc-xs.git
 
 - name: install perl modules and run make
-  shell: cd /usr/local/backuppc-xs ; perl Makefile.PL 
+  shell: cd /usr/local/backuppc-xs ; perl Makefile.PL
 
-- name:  run make
+- name: run make
   shell: cd /usr/local/backuppc-xs ; make
 
 - name: install perl modules
@@ -62,8 +62,8 @@
 - name: Generate the latest release BackupPC tarball from the source file and BackupPC build tools;
   shell: cd /usr/local/backuppc ; VER=`curl --silent "https://api.github.com/repos/backuppc/backuppc/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'`
 
-- name:  this creates backuppc tarball and store it under distr directory 
-  shell: cd /usr/local/backuppc ; ./makeDist --nosyntaxCheck --releasedate 'date -u "+%d %b %Y"' --version $VER
+#- name:  this creates backuppc tarball and store it under distr directory
+#  shell: cd /usr/local/backuppc ; ./makeDist --nosyntaxCheck --releasedate 'date -u "+%d %b %Y"' --version $VERSION
 
 - name: Extract the source code
   shell: cd /usr/local/backuppc ; tar zxf dist/BackupPC-*.tar.gz
@@ -72,16 +72,16 @@
   #command: cd /usr/local/backuppc ; cd BackupPC-* ; ./configure.pl --batch --cgi-dir /var/www/cgi-bin/BackupPC --data-dir /var/lib/backuppc --hostname ubuntu20 --html-dir /var/www/html/BackupPC --html-dir-url /BackupPC --install-dir /usr/local/BackupPC
   shell: cd /usr/local/backuppc ; cd BackupPC-* ; ./configure.pl --batch --cgi-dir /var/www/cgi-bin/BackupPC --data-dir /var/lib/backuppc  --html-dir /var/www/html/BackupPC --html-dir-url /BackupPC --install-dir /usr/local/BackupPC
 
-- name: copy apache2 config 
+- name: copy apache2 config
   shell: cp /usr/local/backuppc/BackupPC-*/httpd/BackupPC.conf /etc/apache2/conf-available/
 
-- name: Apache to allow external access to BackupPC;
+- name: Apache to allow external access to BackupPC
   shell: sed -i 's/Require local/Require all granted/' /etc/apache2/conf-available/BackupPC.conf
 
 - name: Configure Apache to run as BackupPC user, backuppc
   shell: sed -i 's/www-data/backuppc/g' /etc/apache2/envvars
 
-- name: Remove the set-uid from BackupPC admin CGI file;
+- name: Remove the set-uid from BackupPC admin CGI file
   shell: chmod u-s /var/www/cgi-bin/BackupPC/BackupPC_Admin
 
 - name: Change the Basic authentication file

@@ -5,7 +5,7 @@
     name: backuppc
     shell: /bin/bash
     groups: www-data
-    append: yes
+    append: true
 
 - name: Install packages centos7 and RHEL7
   package:
