@@ -7,6 +7,12 @@ ansible_role_backupPC_server
 
 This role setup backupPC server a open source backup software.
 
+Change backuppc admin user.
+
+```
+htpasswd /etc/backuppc/htpasswd backuppc`
+```
+
 Example site.yml
 
 ```
@@ -27,3 +33,7 @@ Example site.yml
   roles:
     - { role: ../ansible_role_backupPC_server }
 ```
+
+Links:
+
+https://kifarunix.com/install-backuppc-on-debian-11/
