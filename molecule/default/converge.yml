@@ -1,0 +1,17 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: yes
+  #vars_files:
+  #  - ../../defaults/main.yml
+  #vars:
+
+
+  tasks:
+    - name: "Include ansible_role_backupPC_server"
+      include_role:
+        name: "ansible_role_backupPC_server"
+
+  #roles:
+    #- role: habbis.ansible_role_backupPC_server

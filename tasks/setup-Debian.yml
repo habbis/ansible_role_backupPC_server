@@ -1,0 +1,57 @@
+---
+
+- name: add user called ansible with sudo right
+  user:
+    name: backuppc
+    shell: /bin/bash
+    groups: www-data
+    append: yes
+
+- name: Install packages centos7 and RHEL7
+  package:
+    name:
+      - backuppc
+      - apache2
+      - rsync
+      - perl
+    state: present
+  when: ansible_pkg_mgr == "apt"
+
+- name: set config.pl
+  ansible.builtin.template:
+    src: templates/config.pl.j2
+    dest: /etc/backuppc/config.pl
+    owner: backuppc
+    group: www-data
+    mode: '0644'
+  when: (ansible_pkg_mgr == "apt")
+
+- name: set config.pl
+  ansible.builtin.template:
+    src: templates/apache.conf.j2
+    dest: /etc/backuppc/apache.conf
+    owner: backuppc
+    group: www-data
+    mode: '0644'
+  when: (ansible_pkg_mgr == "apt")
+
+- name: restart backuppc service
+  service:
+    name: backuppc
+    state: restarted
+
+- name: restart apache2 service
+  service:
+    name: apache2
+    state: restarted
+
+- name: Create .ssh dir backuppc user
+  ansible.builtin.file:
+    path: /home/backuppc/.ssh
+    state: directory
+    mode: '0700'
+
+- name: Generate an OpenSSH key backuppc user
+  community.crypto.openssh_keypair:
+    path: /home/backuppc/.ssh/id_ssh_rsa
+    owner: backuppc

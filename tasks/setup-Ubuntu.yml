@@ -1,0 +1,98 @@
+- name: add user called ansible with sudo right
+  ansible.builtin.user:
+    name: backuppc
+    shell: /bin/bash
+    groups: www-data
+    home: /var/lib/backuppc
+    append: yes
+
+- name: Create .ssh dir backuppc user
+  ansible.builtin.file:
+    path: /home/backuppc/.ssh
+    state: directory
+    mode: '0700'
+
+- name: Generate an OpenSSH key backuppc user
+  community.crypto.openssh_keypair:
+    path: /home/backuppc/.ssh/id_ssh_rsa
+    owner: backuppc
+
+- name: Install packages centos7 and RHEL7
+  package:
+    name:
+      - apache2
+      - rsync
+      - perl
+      - make
+      - git
+      - apache2
+      - build-essential
+    state: present
+  when: ansible_pkg_mgr == "apt"
+
+- name: git clone backuppc-xs
+  shell: cd /usr/local ; git clone https://github.com/backuppc/backuppc-xs.git
+
+- name: install perl modules and run make
+  shell: cd /usr/local/backuppc-xs ; perl Makefile.PL 
+
+- name:  run make
+  shell: cd /usr/local/backuppc-xs ; make
+
+- name: install perl modules
+  shell: cd /usr/local/backuppc-xs ; make install
+
+- name: git clone rsync-bpc
+  shell: cd /usr/local ; git clone https://github.com/backuppc/rsync-bpc.git
+
+- name: configure rsync-bpc
+  shell: cd /usr/local/rsync-bpc ; ./configure
+
+- name: install rsync-bpc
+  shell: cd /usr/local/rsync-bpc ; make
+
+- name: install rsync-bpc
+  shell: cd /usr/local/rsync-bpc ; make install
+
+ ### install backuppc
+
+- name: git clone backuppc
+  shell: cd /usr/local ; git clone https://github.com/backuppc/backuppc.git
+
+- name: Generate the latest release BackupPC tarball from the source file and BackupPC build tools;
+  shell: cd /usr/local/backuppc ; VER=`curl --silent "https://api.github.com/repos/backuppc/backuppc/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'`
+
+- name:  this creates backuppc tarball and store it under distr directory 
+  shell: cd /usr/local/backuppc ; ./makeDist --nosyntaxCheck --releasedate 'date -u "+%d %b %Y"' --version $VER
+
+- name: Extract the source code
+  shell: cd /usr/local/backuppc ; tar zxf dist/BackupPC-*.tar.gz
+
+- name: Build and install and setup BackupPC server
+  #command: cd /usr/local/backuppc ; cd BackupPC-* ; ./configure.pl --batch --cgi-dir /var/www/cgi-bin/BackupPC --data-dir /var/lib/backuppc --hostname ubuntu20 --html-dir /var/www/html/BackupPC --html-dir-url /BackupPC --install-dir /usr/local/BackupPC
+  shell: cd /usr/local/backuppc ; cd BackupPC-* ; ./configure.pl --batch --cgi-dir /var/www/cgi-bin/BackupPC --data-dir /var/lib/backuppc  --html-dir /var/www/html/BackupPC --html-dir-url /BackupPC --install-dir /usr/local/BackupPC
+
+- name: copy apache2 config 
+  shell: cp /usr/local/backuppc/BackupPC-*/httpd/BackupPC.conf /etc/apache2/conf-available/
+
+- name: Apache to allow external access to BackupPC;
+  shell: sed -i 's/Require local/Require all granted/' /etc/apache2/conf-available/BackupPC.conf
+
+- name: Configure Apache to run as BackupPC user, backuppc
+  shell: sed -i 's/www-data/backuppc/g' /etc/apache2/envvars
+
+- name: Remove the set-uid from BackupPC admin CGI file;
+  shell: chmod u-s /var/www/cgi-bin/BackupPC/BackupPC_Admin
+
+- name: Change the Basic authentication file
+  shell: sed -i 's#^AuthUserFile.*$#AuthUserFile /etc/BackupPC/.allowed#' /etc/apache2/conf-available/BackupPC.conf
+
+#- name: restart backuppc service
+#  service:
+#    name: backuppc
+#    state: restarted
+
+#- name: restart apache2 service
+#  service:
+#    name: apache2
+#    state: restarted
